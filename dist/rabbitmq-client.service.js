@@ -41,7 +41,9 @@ let RabbitMQClientService = class RabbitMQClientService {
     }
     async sendToQueue(pattern, payload) {
         try {
-            return await this.client.send(pattern, payload).pipe((0, operators_1.timeout)(5000)).toPromise();
+            return await this.client.send(pattern, payload)
+                .pipe((0, operators_1.timeout)(5000))
+                .toPromise();
         }
         catch (error) {
             console.error('Error al enviar mensaje a la cola:', error);

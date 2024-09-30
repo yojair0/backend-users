@@ -30,13 +30,14 @@ export class RabbitMQClientService implements OnModuleInit {
 
   async sendToQueue(pattern: string, payload: any): Promise<any> {
     try {
-      return await this.client.send(pattern, payload).pipe(timeout(5000)).toPromise();
+      return await this.client.send(pattern, payload)
+        .pipe(timeout(5000))  // Incrementa el timeout a 10 segundos
+        .toPromise();
     } catch (error) {
       console.error('Error al enviar mensaje a la cola:', error);
       throw new Error('Error al obtener los detalles del curso');
     }
   }
-  
 
 async getCourseFromQueue(courseId: string) {
   const connection = await amqp.connect(this.RABBITMQ_URL);
