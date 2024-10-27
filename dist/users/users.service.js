@@ -20,9 +20,8 @@ const jwt_1 = require("@nestjs/jwt");
 const bcrypt = require("bcrypt");
 const rabbitmq_client_service_1 = require("../rabbitmq-client.service");
 let UsersService = class UsersService {
-    constructor(userModel, cartModel, jwtService, rabbitMQClientService) {
+    constructor(userModel, jwtService, rabbitMQClientService) {
         this.userModel = userModel;
-        this.cartModel = cartModel;
         this.jwtService = jwtService;
         this.rabbitMQClientService = rabbitMQClientService;
     }
@@ -145,9 +144,7 @@ exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
     __param(0, (0, mongoose_1.InjectModel)('User')),
-    __param(1, (0, mongoose_1.InjectModel)('Cart')),
     __metadata("design:paramtypes", [mongoose_2.Model,
-        mongoose_2.Model,
         jwt_1.JwtService,
         rabbitmq_client_service_1.RabbitMQClientService])
 ], UsersService);

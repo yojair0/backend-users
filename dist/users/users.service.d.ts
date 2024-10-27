@@ -1,15 +1,14 @@
 import { Model } from 'mongoose';
-import { User, UserDocument, CartItem } from './schemas/user.schema';
+import { User, UserDocument } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { RabbitMQClientService } from '../rabbitmq-client.service';
 export declare class UsersService {
     private userModel;
-    private cartModel;
     private jwtService;
     private rabbitMQClientService;
-    constructor(userModel: Model<UserDocument>, cartModel: Model<CartItem>, jwtService: JwtService, rabbitMQClientService: RabbitMQClientService);
+    constructor(userModel: Model<UserDocument>, jwtService: JwtService, rabbitMQClientService: RabbitMQClientService);
     register(createUserDto: CreateUserDto): Promise<User>;
     login(email: string, password: string): Promise<{
         token: string;

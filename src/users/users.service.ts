@@ -12,7 +12,6 @@ import { RabbitMQClientService } from '../rabbitmq-client.service'; // Servicio 
 export class UsersService {
   constructor(
     @InjectModel('User') private userModel: Model<UserDocument>,
-    @InjectModel('Cart') private cartModel: Model<CartItem>, // Asegúrate de que el nombre coincide con el registrado
     private jwtService: JwtService,
     private rabbitMQClientService: RabbitMQClientService,
   ) {}
