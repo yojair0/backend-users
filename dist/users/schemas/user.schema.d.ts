@@ -7,11 +7,20 @@ export declare class CartItem {
     price: number;
     quantity: number;
 }
+export declare class PurchasedCourse {
+    _id: string;
+    id: string;
+    title: string;
+    description: string;
+    category: string;
+    price: number;
+    createdat: string;
+}
 export declare class User extends Document {
     email: string;
     password: string;
     cart: string[];
-    purchasedCourses: string[];
+    purchasedCourses: PurchasedCourse[];
 }
 export declare const UserSchema: import("mongoose").Schema<User, import("mongoose").Model<User, any, any, any, Document<unknown, any, User> & User & Required<{
     _id: unknown;

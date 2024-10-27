@@ -16,10 +16,38 @@ export class CartItem {
 
   @Prop({ required: true })
   price: number;
+
+  @Prop({ required: true })
   quantity: number;
 }
 
 const CartItemSchema = SchemaFactory.createForClass(CartItem);
+
+@Schema()
+export class PurchasedCourse {
+  @Prop({ required: true })
+  _id: string;
+
+  @Prop({ required: true })
+  id: string;
+
+  @Prop({ required: true })
+  title: string;
+
+  @Prop({ required: true })
+  description: string;
+
+  @Prop({ required: true })
+  category: string;
+
+  @Prop({ required: true })
+  price: number;
+
+  @Prop({ required: true })
+  createdat: string;
+}
+
+const PurchasedCourseSchema = SchemaFactory.createForClass(PurchasedCourse);
 
 @Schema()
 export class User extends Document {
@@ -32,8 +60,8 @@ export class User extends Document {
   @Prop({ type: [String], default: [] }) // Carrito de compras como JSON strings
   cart: string[]; // Cada string representa un curso en formato JSON
 
-  @Prop({ type: [String], default: [] }) // Historial de compras, solo los IDs de los cursos
-  purchasedCourses: string[];
+  @Prop({ type: [PurchasedCourseSchema], default: [] }) // Historial de compras con detalles completos
+  purchasedCourses: PurchasedCourse[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

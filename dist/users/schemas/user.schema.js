@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserSchema = exports.User = exports.CartItem = void 0;
+exports.UserSchema = exports.User = exports.PurchasedCourse = exports.CartItem = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 let CartItem = class CartItem {
@@ -30,10 +30,49 @@ __decorate([
     (0, mongoose_1.Prop)({ required: true }),
     __metadata("design:type", Number)
 ], CartItem.prototype, "price", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", Number)
+], CartItem.prototype, "quantity", void 0);
 exports.CartItem = CartItem = __decorate([
     (0, mongoose_1.Schema)()
 ], CartItem);
 const CartItemSchema = mongoose_1.SchemaFactory.createForClass(CartItem);
+let PurchasedCourse = class PurchasedCourse {
+};
+exports.PurchasedCourse = PurchasedCourse;
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], PurchasedCourse.prototype, "_id", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], PurchasedCourse.prototype, "id", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], PurchasedCourse.prototype, "title", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], PurchasedCourse.prototype, "description", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], PurchasedCourse.prototype, "category", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", Number)
+], PurchasedCourse.prototype, "price", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", String)
+], PurchasedCourse.prototype, "createdat", void 0);
+exports.PurchasedCourse = PurchasedCourse = __decorate([
+    (0, mongoose_1.Schema)()
+], PurchasedCourse);
+const PurchasedCourseSchema = mongoose_1.SchemaFactory.createForClass(PurchasedCourse);
 let User = class User extends mongoose_2.Document {
 };
 exports.User = User;
@@ -50,7 +89,7 @@ __decorate([
     __metadata("design:type", Array)
 ], User.prototype, "cart", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: [String], default: [] }),
+    (0, mongoose_1.Prop)({ type: [PurchasedCourseSchema], default: [] }),
     __metadata("design:type", Array)
 ], User.prototype, "purchasedCourses", void 0);
 exports.User = User = __decorate([

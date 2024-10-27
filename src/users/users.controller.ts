@@ -16,7 +16,7 @@ export class UsersController {
   async register(@Body() createUserDto: CreateUserDto) {
     return await this.usersService.register(createUserDto);
   }
-  
+
 
   @Post('login')
   async login(@Body('email') email: string, @Body('password') password: string) {
@@ -58,7 +58,6 @@ export class UsersController {
     }
   }
   
-
   @Get('cart')
   @UseGuards(JwtAuthGuard)
   async getCart(@Request() req) {
@@ -72,4 +71,12 @@ export class UsersController {
     const userId = req.user.userId;
     return await this.usersService.clearUserCart(userId);
   }
+
+  @Post('purchase')
+  @UseGuards(JwtAuthGuard)
+  async purchaseCart(@Request() req) {
+    const userId = req.user.userId;
+    return await this.usersService.purchaseCartItems(userId);
+  }
+
 }

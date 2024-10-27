@@ -11,7 +11,7 @@ export declare class UsersController {
         token: string;
     }>;
     update(req: any, updateUserDto: UpdateUserDto): Promise<import("./schemas/user.schema").User>;
-    getPurchaseHistory(req: any): Promise<string[]>;
+    getPurchaseHistory(req: any): Promise<import("./schemas/user.schema").PurchasedCourse[]>;
     addToCart(req: any, courseId: string): Promise<{
         message: string;
     }>;
@@ -19,4 +19,5 @@ export declare class UsersController {
     clearCart(req: any): Promise<{
         message: string;
     }>;
+    purchaseCart(req: any): Promise<any>;
 }

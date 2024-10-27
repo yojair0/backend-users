@@ -1,5 +1,5 @@
 import { Model } from 'mongoose';
-import { User, UserDocument } from './schemas/user.schema';
+import { User, UserDocument, PurchasedCourse } from './schemas/user.schema';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -15,7 +15,7 @@ export declare class UsersService {
     }>;
     getUserById(userId: string): Promise<User>;
     updateUser(userId: string, updateUserDto: UpdateUserDto): Promise<User>;
-    getPurchaseHistory(userId: string): Promise<string[]>;
+    getPurchaseHistory(userId: string): Promise<PurchasedCourse[]>;
     getAllUsers(): Promise<User[]>;
     clearCart(userId: string): Promise<{
         message: string;
@@ -32,4 +32,5 @@ export declare class UsersService {
         message: string;
     }>;
     getCourseDetails(courseId: string): Promise<string>;
+    purchaseCartItems(userId: string): Promise<any>;
 }

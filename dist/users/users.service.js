@@ -65,9 +65,9 @@ let UsersService = class UsersService {
         return updatedUser;
     }
     async getPurchaseHistory(userId) {
-        const user = await this.userModel.findById(userId).select('purchasedCourses');
+        const user = await this.userModel.findById(userId);
         if (!user) {
-            throw new common_1.NotFoundException('User not found');
+            throw new common_1.NotFoundException('Usuario no encontrado');
         }
         return user.purchasedCourses;
     }
@@ -138,6 +138,36 @@ let UsersService = class UsersService {
             title: courseDetails.title,
             price: courseDetails.price,
         });
+    }
+    async purchaseCartItems(userId) {
+        const user = await this.userModel.findById(userId);
+        if (!user) {
+            throw new common_1.NotFoundException('Usuario no encontrado');
+        }
+        console.log("Contenido del carrito antes de parsear:", user.cart);
+        const purchasedCourses = user.cart.map((item) => {
+            try {
+                const parsedItem = JSON.parse(item);
+                return {
+                    _id: parsedItem._id,
+                    id: parsedItem.id,
+                    title: parsedItem.title,
+                    description: parsedItem.description,
+                    category: parsedItem.category,
+                    price: parsedItem.price,
+                    createdat: parsedItem.createdat,
+                };
+            }
+            catch (error) {
+                console.error("Error al parsear el item del carrito:", item, error);
+                return null;
+            }
+        }).filter((course) => course !== null);
+        const newPurchasedCourses = [...user.purchasedCourses, ...purchasedCourses];
+        user.purchasedCourses = newPurchasedCourses;
+        user.cart = [];
+        await user.save();
+        return { message: 'Compra realizada con éxito, cursos añadidos a purchasedCourses' };
     }
 };
 exports.UsersService = UsersService;

@@ -60,6 +60,10 @@ let UsersController = class UsersController {
         const userId = req.user.userId;
         return await this.usersService.clearUserCart(userId);
     }
+    async purchaseCart(req) {
+        const userId = req.user.userId;
+        return await this.usersService.purchaseCartItems(userId);
+    }
 };
 exports.UsersController = UsersController;
 __decorate([
@@ -119,6 +123,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "clearCart", null);
+__decorate([
+    (0, common_1.Post)('purchase'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "purchaseCart", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('auth'),
     __metadata("design:paramtypes", [users_service_1.UsersService,

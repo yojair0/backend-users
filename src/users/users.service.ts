@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument, CartItem } from './schemas/user.schema'; // Importamos el esquema
+import { User, UserDocument, CartItem, PurchasedCourse } from './schemas/user.schema'; // Importamos el esquema
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -71,13 +71,16 @@ export class UsersService {
   }
 
   // Obtener el historial de compras del usuario
-  async getPurchaseHistory(userId: string): Promise<string[]> {
-    const user = await this.userModel.findById(userId).select('purchasedCourses');
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    return user.purchasedCourses; // Asegúrate de que purchasedCourses está bien definido
+async getPurchaseHistory(userId: string): Promise<PurchasedCourse[]> {
+  // Buscar al usuario
+  const user = await this.userModel.findById(userId);
+  if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
   }
+  
+  return user.purchasedCourses; // Asegúrate de que purchasedCourses está bien definido
+}
+
 
   // Obtener todos los usuarios
   async getAllUsers(): Promise<User[]> {
@@ -187,5 +190,46 @@ export class UsersService {
     });
   }
   
-    
+  async purchaseCartItems(userId: string): Promise<any> {
+    // Buscar al usuario
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+        throw new NotFoundException('Usuario no encontrado');
+    }
+
+    console.log("Contenido del carrito antes de parsear:", user.cart);
+
+    // Agregar cada item completo del carrito a purchasedCourses
+    const purchasedCourses = user.cart.map((item) => {
+        try {
+            const parsedItem = JSON.parse(item); // Parsear cada item a un objeto completo
+            return {
+                _id: parsedItem._id,
+                id: parsedItem.id,
+                title: parsedItem.title,
+                description: parsedItem.description,
+                category: parsedItem.category,
+                price: parsedItem.price,
+                createdat: parsedItem.createdat,
+            };
+        } catch (error) {
+            console.error("Error al parsear el item del carrito:", item, error);
+            return null; // Retorna null si hay error de parseo
+        }
+    }).filter((course) => course !== null); // Filtrar los null
+
+    // Actualizar purchasedCourses sin duplicados
+    const newPurchasedCourses = [...user.purchasedCourses, ...purchasedCourses];
+    user.purchasedCourses = newPurchasedCourses;
+
+    // Limpiar el carrito después de la compra
+    user.cart = [];
+
+    // Guardar cambios en la base de datos
+    await user.save();
+    return { message: 'Compra realizada con éxito, cursos añadidos a purchasedCourses' };
+}
+
+  
+  
 }
