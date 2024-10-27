@@ -5,6 +5,9 @@ export type UserDocument = User & Document;
 
 @Schema()
 export class CartItem {
+  save() {
+    throw new Error('Method not implemented.');
+  }
   @Prop({ required: true })
   courseId: string;
 
@@ -13,6 +16,7 @@ export class CartItem {
 
   @Prop({ required: true })
   price: number;
+  quantity: number;
 }
 
 const CartItemSchema = SchemaFactory.createForClass(CartItem);
@@ -25,8 +29,8 @@ export class User extends Document {
   @Prop({ required: true })
   password: string;
 
-  @Prop({ type: [CartItemSchema], default: [] }) // Carrito de compras
-  cart: CartItem[];
+  @Prop({ type: [String], default: [] }) // Carrito de compras como JSON strings
+  cart: string[]; // Cada string representa un curso en formato JSON
 
   @Prop({ type: [String], default: [] }) // Historial de compras, solo los IDs de los cursos
   purchasedCourses: string[];

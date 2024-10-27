@@ -1,67 +1,112 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
-import { timeout } from 'rxjs/operators';
-// rabbitmq-client.service.ts
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import * as amqp from 'amqplib/callback_api';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import * as amqp from 'amqplib';
+
 @Injectable()
-export class RabbitMQClientService implements OnModuleInit {
-  private client: ClientProxy;  private readonly RABBITMQ_URL = process.env.RABBITMQ_URL;
+export class RabbitMQClientService implements OnModuleInit, OnModuleDestroy {
+  private readonly RABBITMQ_URL = process.env.RABBITMQ_URL || 'amqp://localhost:5672';
+  private connection: amqp.Connection;
+  private channel: amqp.Channel;
 
-  constructor(@InjectModel('User') private readonly userModel: Model<any>) {}
-
-  onModuleInit() {
-    this.client = ClientProxyFactory.create({
-      transport: Transport.RMQ,
-      options: {
-        urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
-        queue: 'users_queue',
-        queueOptions: {
-          durable: true,
-        },
-      },
-    });
+  async onModuleInit() {
+    await this.connect();
   }
 
-  async emitToQueue(pattern: string, payload: any): Promise<void> {
-    this.client.emit(pattern, payload);
+  async onModuleDestroy() {
+    await this.close();
   }
 
-  async sendToQueue(pattern: string, payload: any): Promise<any> {
+  private async connect() {
     try {
-      return await this.client.send(pattern, payload)
-        .pipe(timeout(5000))  // Incrementa el timeout a 10 segundos
-        .toPromise();
+      this.connection = await amqp.connect(this.RABBITMQ_URL);
+      this.channel = await this.connection.createChannel();
+
+      // Declarar colas
+      await this.channel.assertQueue('users_queue', { durable: true });
+      await this.channel.assertQueue('user_response_queue', { durable: false });
+
+      this.connection.on('close', () => {
+        console.error('Conexión de RabbitMQ cerrada. Intentando reconectar...');
+        setTimeout(() => this.connect(), 1000);
+      });
+
+      this.connection.on('error', (err) => {
+        console.error('Error en la conexión de RabbitMQ:', err);
+      });
+
+      console.log('Conexión a RabbitMQ exitosa');
     } catch (error) {
-      console.error('Error al enviar mensaje a la cola:', error);
-      throw new Error('Error al obtener los detalles del curso');
+      console.error('Error al conectar a RabbitMQ:', error);
+      setTimeout(() => this.connect(), 1000);
     }
   }
 
-async getCourseFromQueue(courseId: string) {
-  const connection = await amqp.connect(this.RABBITMQ_URL);
-  const channel = await connection.createChannel();
-  const queue = 'cart_queue';
-
-  await channel.assertQueue(queue, { durable: false });
-
-  let course;
-  channel.consume(queue, (msg) => {
-    if (msg !== null) {
-      const content = JSON.parse(msg.content.toString());
-      if (content.course && content.course.courseId === courseId) {
-        course = content.course;
-      }
-      channel.ack(msg);
+  private async ensureChannel() {
+    if (!this.channel || this.channel.connection === null) {
+      console.warn('Canal no disponible. Intentando reconectar el canal...');
+      await this.connect();
     }
-  });
+  }
 
-  await new Promise(resolve => setTimeout(resolve, 2000)); // Simula espera de mensaje
+  async emitToQueue(queue: string, payload: any): Promise<void> {
+    await this.ensureChannel();
+    const messageBuffer = Buffer.from(JSON.stringify(payload));
+    await this.channel.sendToQueue(queue, messageBuffer);
+    console.log(`Mensaje emitido a la cola ${queue}`);
+  }
 
-  await channel.close();
-  await connection.close();
+  async sendToQueue(queue: string, payload: any): Promise<any> {
+    await this.ensureChannel();
+    const correlationId = Math.random().toString(16).slice(2);
+    const responseQueue = 'user_response_queue';
 
-  return course;
+    const messageBuffer = Buffer.from(JSON.stringify(payload));
+    console.log(`Enviando mensaje a ${queue} con correlationId ${correlationId}`);
+
+    return new Promise(async (resolve, reject) => {
+        await this.channel.sendToQueue(queue, messageBuffer, {
+            correlationId,
+            replyTo: responseQueue,
+        });
+
+        const responseTimeout = setTimeout(() => {
+            reject(new Error('Timeout al esperar la respuesta del curso'));
+        }, 10000);
+
+        const consumerTag = await this.channel.consume(
+            responseQueue,
+            (msg) => {
+                if (msg && msg.properties.correlationId === correlationId) {
+                    clearTimeout(responseTimeout);
+                    const response = JSON.parse(msg.content.toString());
+                    this.channel.ack(msg);
+                    console.log(`Respuesta recibida con correlationId ${correlationId}`);
+                    this.channel.cancel(consumerTag.consumerTag); // Cancelar el consumidor después de recibir la respuesta
+                    resolve(response);
+                }
+            },
+            { noAck: false },
+        );
+    });
 }
+
+
+  async getCourseFromQueue(courseId: string): Promise<any> {
+    try {
+      const response = await this.sendToQueue('get_course_details', { courseId });
+      console.log('Detalles del curso obtenidos:', response);
+      return response;
+    } catch (error) {
+      console.error('Error al obtener el curso desde la cola:', error);
+      throw new Error('No se pudo obtener el curso desde la cola');
+    }
+  }
+
+  async close() {
+    if (this.channel) {
+      await this.channel.close();
+    }
+    if (this.connection) {
+      await this.connection.close();
+    }
+  }
 }

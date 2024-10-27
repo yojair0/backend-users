@@ -11,9 +11,10 @@ import { RabbitMQClientService } from '../rabbitmq-client.service'; // Servicio 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<UserDocument>,
+    @InjectModel('User') private userModel: Model<UserDocument>,
+    @InjectModel('Cart') private cartModel: Model<CartItem>, // Asegúrate de que el nombre coincide con el registrado
     private jwtService: JwtService,
-    private rabbitMQClientService: RabbitMQClientService, // Inyecta el servicio
+    private rabbitMQClientService: RabbitMQClientService,
   ) {}
 
   // Registro de usuarios con RabbitMQ
@@ -84,43 +85,6 @@ export class UsersService {
     return await this.userModel.find().exec();
   }
 
-  async addToCart(userId: string, courseId: string) {
-    // Log para verificar que entra en el método
-    console.log(`Añadiendo curso ${courseId} al carrito del usuario ${userId}`);
-  
-    try {
-      // Enviar mensaje a RabbitMQ para obtener los detalles del curso
-      const courseDetails = await this.rabbitMQClientService.sendToQueue('get_course_details', { courseId });
-  
-      // Log para verificar si hay detalles del curso
-      console.log(`Detalles del curso:`, courseDetails);
-  
-      if (courseDetails) {
-        const user = await this.userModel.findById(userId);
-        if (!user) {
-          throw new NotFoundException('User not found');
-        }
-  
-        user.cart.push({
-          courseId: courseDetails.courseId,
-          title: courseDetails.title,
-          price: courseDetails.price,
-        });
-  
-        await user.save();
-  
-        // Log para verificar si se guardó correctamente
-        console.log('Curso añadido correctamente al carrito');
-        return { message: 'Curso añadido al carrito' };
-      } else {
-        throw new Error('El curso no existe');
-      }
-    } catch (error) {
-      console.error('Error al añadir curso al carrito:', error.message);
-      throw new Error('No se pudo añadir el curso al carrito');
-    }
-  }
-
   // Función para vaciar el carrito
   async clearCart(userId: string) {
     const user = await this.userModel.findById(userId);
@@ -128,7 +92,6 @@ export class UsersService {
     await user.save();
     return { message: 'Carrito limpiado' };
   }
-
 
   // Procesar la compra de cursos desde el carrito
   async purchaseCourses(userId: string): Promise<User> {
@@ -152,4 +115,78 @@ export class UsersService {
   
     return user;
   }
+
+  // Función para agregar al carrito, almacenando el curso como string JSON
+  async addToCart(userId: string, courseId: string, courseDetails: { title: string; price: number }) {
+    // Convertir los detalles del curso en un string JSON
+    const courseDetailsJson = JSON.stringify(courseDetails);
+
+    // Buscar al usuario
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+        throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Verificar si el curso ya está en el carrito
+    const existingCartItemIndex = user.cart.findIndex((item) => JSON.parse(item).courseId === courseId);
+
+    if (existingCartItemIndex !== -1) {
+        // Si ya existe, aumentar la cantidad
+        const existingCartItem = JSON.parse(user.cart[existingCartItemIndex]);
+        existingCartItem.quantity += 1;
+        user.cart[existingCartItemIndex] = JSON.stringify(existingCartItem);
+    } else {
+        // Si no existe, agregar el curso como string JSON en el carrito
+        user.cart.push(courseDetailsJson);
+    }
+
+    await user.save();
+    return { message: 'Curso añadido al carrito' };
+  }
+
+
+
+
+  // Obtener el carrito de un usuario, deserializando cada curso
+  async getUserCart(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    // Deserializar cada curso del carrito antes de retornarlo
+    return user.cart.map((item) => JSON.parse(item));
+  }
+
+
+  // Limpiar el carrito de un usuario
+  async clearUserCart(userId: string) {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    user.cart = []; // Vaciar el carrito
+    await user.save();
+    return { message: 'Carrito limpiado' };
+  }
+
+
+  // Función para obtener los detalles del curso desde RabbitMQ como string JSON
+  async getCourseDetails(courseId: string): Promise<string> {
+    const courseDetails = await this.rabbitMQClientService.sendToQueue('get_course_details', { courseId });
+
+    if (!courseDetails) {
+      throw new NotFoundException('El curso no existe');
+    }
+
+    // Serializar los detalles del curso como string JSON antes de retornarlo
+    return JSON.stringify({
+      courseId: courseId,
+      title: courseDetails.title,
+      price: courseDetails.price,
+    });
+  }
+  
+    
 }

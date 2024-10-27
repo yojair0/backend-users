@@ -3,15 +3,19 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { User, UserSchema } from './schemas/user.schema';
+import { CartItem, CartSchema } from './schemas/cart.schema'; // Importa CartSchema
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from '../auth/jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { RabbitMQClientService } from '../rabbitmq-client.service'; // Importa el servicio
+import { RabbitMQClientService } from '../rabbitmq-client.service';
 
 @Module({
   imports: [
     ConfigModule,
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: 'Cart', schema: CartSchema }, // Registra Cart aquí
+    ]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

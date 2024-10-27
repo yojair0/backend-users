@@ -13,6 +13,9 @@ exports.UserSchema = exports.User = exports.CartItem = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 let CartItem = class CartItem {
+    save() {
+        throw new Error('Method not implemented.');
+    }
 };
 exports.CartItem = CartItem;
 __decorate([
@@ -43,7 +46,7 @@ __decorate([
     __metadata("design:type", String)
 ], User.prototype, "password", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: [CartItemSchema], default: [] }),
+    (0, mongoose_1.Prop)({ type: [String], default: [] }),
     __metadata("design:type", Array)
 ], User.prototype, "cart", void 0);
 __decorate([

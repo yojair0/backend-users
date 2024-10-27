@@ -18,9 +18,11 @@ const users_service_1 = require("./users.service");
 const create_user_dto_1 = require("./dto/create-user.dto");
 const update_user_dto_1 = require("./dto/update-user.dto");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const rabbitmq_client_service_1 = require("../rabbitmq-client.service");
 let UsersController = class UsersController {
-    constructor(usersService) {
+    constructor(usersService, rabbitMQClientService) {
         this.usersService = usersService;
+        this.rabbitMQClientService = rabbitMQClientService;
     }
     async register(createUserDto) {
         return await this.usersService.register(createUserDto);
@@ -38,11 +40,25 @@ let UsersController = class UsersController {
     }
     async addToCart(req, courseId) {
         const userId = req.user.userId;
-        return this.usersService.addToCart(userId, courseId);
+        try {
+            const courseDetails = await this.rabbitMQClientService.sendToQueue('get_course_details', { courseId });
+            if (!courseDetails) {
+                throw new Error('Course details not found');
+            }
+            return await this.usersService.addToCart(userId, courseId, courseDetails);
+        }
+        catch (error) {
+            console.error('Error al añadir el curso al carrito:', error);
+            throw new Error('No se pudo obtener los detalles del curso o añadirlo al carrito');
+        }
+    }
+    async getCart(req) {
+        const userId = req.user.userId;
+        return await this.usersService.getUserCart(userId);
     }
     async clearCart(req) {
         const userId = req.user.userId;
-        return this.usersService.clearCart(userId);
+        return await this.usersService.clearUserCart(userId);
     }
 };
 exports.UsersController = UsersController;
@@ -88,6 +104,14 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "addToCart", null);
 __decorate([
+    (0, common_1.Get)('cart'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Request)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getCart", null);
+__decorate([
     (0, common_1.Patch)('cart/clear'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Request)()),
@@ -97,6 +121,7 @@ __decorate([
 ], UsersController.prototype, "clearCart", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('auth'),
-    __metadata("design:paramtypes", [users_service_1.UsersService])
+    __metadata("design:paramtypes", [users_service_1.UsersService,
+        rabbitmq_client_service_1.RabbitMQClientService])
 ], UsersController);
 //# sourceMappingURL=users.controller.js.map
