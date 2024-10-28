@@ -49,8 +49,13 @@ export class PurchasedCourse {
 
 const PurchasedCourseSchema = SchemaFactory.createForClass(PurchasedCourse);
 
+
 @Schema()
 export class User extends Document {
+
+  @Prop({ unique: true, required: true })
+  username: string;
+
   @Prop({ required: true })
   email: string;
 

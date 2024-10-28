@@ -17,6 +17,7 @@ export declare class PurchasedCourse {
     createdat: string;
 }
 export declare class User extends Document {
+    username: string;
     email: string;
     password: string;
     cart: string[];
